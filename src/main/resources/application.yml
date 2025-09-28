@@ -1,0 +1,252 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: distributed-timestamp-system
+  
+  profiles:
+    active: dev
+  
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:gfaeofw8}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:123456}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+  
+  # JTA 事务管理配置
+  jta:
+    enabled: true
+    atomikos:
+      connectionfactory:
+        borrow-connection-timeout: 30
+        ignore-session-transacted-flag: true
+        local-transaction-mode: false
+        maintenance-interval: 60
+        max-idle-time: 60
+        max-lifetime: 0
+        max-pool-size: 1
+        min-pool-size: 1
+        reap-timeout: 0
+        unique-resource-name: xamq
+        xa-connection-factory-class-name: org.apache.activemq.ActiveMQXAConnectionFactory
+        xa-properties:
+          url: vm://localhost
+      datasource:
+        borrow-connection-timeout: 30
+        default-isolation-level: 2
+        login-timeout: 0
+        maintenance-interval: 60
+        max-idle-time: 60
+        max-lifetime: 0
+        max-pool-size: 1
+        min-pool-size: 1
+        reap-timeout: 0
+        test-query: SELECT 1
+        unique-resource-name: xa-datasource
+        xa-data-source-class-name: com.mysql.cj.jdbc.MysqlXADataSource
+        xa-properties:
+          url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:gfaeofw8}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+          user: ${MYSQL_USERNAME:root}
+          password: ${MYSQL_PASSWORD:123456}
+      properties:
+        enable-logging: true
+        force-shutdown-on-vm-exit: false
+        log-base-dir: ./logs
+        log-base-name: transactions
+        max-actives: 50
+        max-timeout: 300000
+        default-jta-timeout: 10000
+        serial-jta-transactions: true
+        allow-sub-transactions: true
+        recovery:
+          delay: 10000
+          max-retries: 5
+          retry-interval: 10000
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        # JTA 事务管理器配置
+        transaction:
+          jta:
+            platform: com.atomikos.icatch.jta.hibernate.TransactionManagerLookup
+        current_session_context_class: jta
+  
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+        max-wait: 2000ms
+  
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+# Seata配置
+seata:
+  enabled: true
+  application-id: ${spring.application.name}
+  tx-service-group: dts-tx-group
+  enable-auto-data-source-proxy: true
+  data-source-proxy-mode: AT
+  config:
+    type: nacos
+    nacos:
+      server-addr: ${NACOS_SERVER:localhost:8848}
+      group: SEATA_GROUP
+      namespace: seata
+      username: nacos
+      password: nacos
+  registry:
+    type: nacos
+    nacos:
+      application: seata-server
+      server-addr: ${NACOS_SERVER:localhost:8848}
+      group: SEATA_GROUP
+      namespace: seata
+      username: nacos
+      password: nacos
+  service:
+    vgroup-mapping:
+      dts-tx-group: default
+    grouplist:
+      default: ${SEATA_SERVER:localhost:8091}
+
+# 应用自定义配置
+dts:
+  node:
+    id: ${NODE_ID:node-1}
+    cluster: ${CLUSTER_NAME:default}
+  
+  timestamp:
+    lamport:
+      sync-interval: 1000
+      persistence-enabled: true
+    vector:
+      max-nodes: 100
+      cleanup-interval: 3600000
+    vector-clock:
+      max-entries: 1000
+      gc-threshold: 0.8
+  
+  transaction:
+    timeout: 30000
+    retry-count: 3
+    rollback-timeout: 10000
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      node: ${dts.node.id}
+
+# 日志配置
+logging:
+  level:
+    com.example.dts: INFO
+    org.springframework.transaction: DEBUG
+    io.seata: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+  file:
+    name: logs/dts-system.log
+    max-size: 100MB
+    max-history: 30
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/gfaeofw8?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+  
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+
+logging:
+  level:
+    com.example.dts: DEBUG
+    org.springframework.transaction: DEBUG
+
+---
+# 测试环境配置
+spring:
+  config:
+    activate:
+      on-profile: test
+  
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+
+---
+# 生产环境配置
+spring:
+  config:
+    activate:
+      on-profile: prod
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    com.example.dts: WARN
+    org.springframework.transaction: WARN
