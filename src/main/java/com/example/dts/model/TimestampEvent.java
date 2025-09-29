@@ -161,6 +161,23 @@ public class TimestampEvent {
         this.createdAt = createdAt;
     }
     
+    // 添加缺失的getter方法
+    public String getEventId() {
+        return this.id != null ? this.id.toString() : null;
+    }
+    
+    public Long getTimestamp() {
+        return this.lamportTimestamp;
+    }
+    
+    public String getBusinessType() {
+        return this.eventType;
+    }
+    
+    public Long getLamportClock() {
+        return this.lamportTimestamp;
+    }
+    
     @Override
     public String toString() {
         return "TimestampEvent{" +

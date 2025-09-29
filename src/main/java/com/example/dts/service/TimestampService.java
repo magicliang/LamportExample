@@ -72,6 +72,13 @@ public class TimestampService {
     }
     
     /**
+     * 生成时间戳事件 - 为了兼容性添加的方法
+     */
+    public TimestampEvent generateTimestampEvent(String eventType, String businessType, Map<String, Object> businessData) {
+        return createEvent(businessType != null ? businessType : eventType, businessData);
+    }
+    
+    /**
      * 同步接收到的时间戳事件
      */
     public TimestampEvent syncEvent(String sourceNodeId, long receivedLamportTime, 

@@ -129,8 +129,8 @@ public class XATransactionService {
                 stmt.setString(3, event.getBusinessType());
                 stmt.setLong(4, event.getTimestamp());
                 stmt.setLong(5, event.getLamportClock());
-                stmt.setString(6, event.getVectorClock().toString());
-                stmt.setString(7, event.getVersionVector().toString());
+                stmt.setString(6, event.getVectorClock());
+                stmt.setString(7, event.getVersionVector());
                 stmt.setString(8, event.getNodeId());
                 stmt.setString(9, businessData.toString());
                 stmt.setTimestamp(10, new java.sql.Timestamp(System.currentTimeMillis()));
