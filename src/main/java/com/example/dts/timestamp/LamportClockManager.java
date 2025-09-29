@@ -3,6 +3,7 @@ package com.example.dts.timestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -170,7 +171,7 @@ public class LamportClockManager {
                 "  return current " +
                 "end";
             
-            redisTemplate.execute((connection) -> {
+            redisTemplate.execute((RedisCallback<Object>) connection -> {
                 return connection.eval(script.getBytes(), 
                                      java.util.Collections.singletonList(GLOBAL_CLOCK_KEY.getBytes()),
                                      java.util.Collections.singletonList(String.valueOf(time).getBytes()));
